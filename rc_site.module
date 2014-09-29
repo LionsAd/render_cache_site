@@ -1,0 +1,50 @@
+<?php
+
+/**
+ * Implements hook_block_info().
+ */
+function rc_site_block_info() {
+  $delays = array( 50, 500, 2000 );
+  $blocks = array();
+  foreach ($delays as $delay) {
+    // This example comes from node.module.
+    $blocks['rc_site_' . $delay] = array(
+      'info' => t('Delay @delay ms', array('@delay' => $delay)),
+      'cache' => DRUPAL_NO_CACHE,
+    );
+  }
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function rc_site_block_view($delta = '') {
+  $block = array();
+  $delay = str_replace('rc_site_', '', $delta);
+  $block['subject'] = t('Delayed Block: ' . $delay);
+  $block['content'] = array(
+    '#markup' => _rc_site_view_block($delay),
+  );
+
+  return $block;
+}
+
+function _rc_site_view_block($delay) {
+  usleep($delay * 1000);
+  return t('Waited @delay ms', array(
+    '@delay' => $delay,
+  )) . '<br />'. t('Real time data: ' . microtime(TRUE));
+}
+
+/**
+ * Implements hook_render_cache_block_cache_info_alter().
+ */
+function rc_site_render_cache_block_cache_info_alter(&$cache_info, $object, $context) {
+  if ($context['module'] == 'rc_site') {
+    // @todo Need at least custom granularity for now.
+    $cache_info['granularity'] = DRUPAL_CACHE_CUSTOM; 
+    $cache_info['render_strategy'][] = 'big_pipe';
+  }
+}
